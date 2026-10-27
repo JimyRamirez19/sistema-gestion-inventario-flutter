@@ -1,0 +1,93 @@
+# ==============================================================================
+# .gitignore - Sistema de Gestión de Inventario (FastAPI + SQLite + Flutter)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Variables de entorno y secretos (CRÍTICO: Nunca publicar en Git)
+# ------------------------------------------------------------------------------
+*.env
+*.env.local
+*.env.*.local
+!.env.example
+
+# ------------------------------------------------------------------------------
+# 2. Python y Backend
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+backend/.pytest_cache/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+
+# ------------------------------------------------------------------------------
+# 3. Base de datos local SQLite (se inicializa automáticamente con seed_data.py)
+# ------------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+backend/inventario.db
+
+# ------------------------------------------------------------------------------
+# 4. Flutter y Dart
+# ------------------------------------------------------------------------------
+.dart_tool/
+**/build/
+**/.dart_tool/
+**/.packages
+**/.pub/
+**/.pub-cache/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+frontend_flutter/.packages
+frontend_flutter/.flutter-plugins
+frontend_flutter/.flutter-plugins-dependencies
+frontend_flutter/lib/generated_plugin_registrant.dart
+
+# ------------------------------------------------------------------------------
+# 5. Android Build Artifacts
+# ------------------------------------------------------------------------------
+frontend_flutter/android/.gradle/
+frontend_flutter/android/local.properties
+frontend_flutter/android/**/GeneratedPluginRegistrant.java
+frontend_flutter/android/captures/
+frontend_flutter/android/.externalNativeBuild/
+**/android/.gradle/
+**/android/local.properties
+*.apk
+*.aab
+
+# ------------------------------------------------------------------------------
+# 6. Windows, macOS y Linux Desktop Ephemeral
+# ------------------------------------------------------------------------------
+frontend_flutter/windows/flutter/ephemeral/
+frontend_flutter/macos/Flutter/ephemeral/
+frontend_flutter/linux/flutter/ephemeral/
+frontend_flutter/windows/runner/Debug/
+frontend_flutter/windows/runner/Release/
+
+# ------------------------------------------------------------------------------
+# 7. IDEs y Archivos de Sistema
+# ------------------------------------------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*.log
