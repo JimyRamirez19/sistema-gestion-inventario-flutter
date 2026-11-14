@@ -1,19 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../controllers/auth_controller.dart';
 import '../controllers/inventario_controller.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/login_screen.dart';
 import '../screens/productos_list_screen.dart';
 import '../screens/producto_detail_screen.dart';
 import '../screens/producto_form_screen.dart';
 
-GoRouter createRouter(InventarioController controller) {
+GoRouter createRouter(
+  AuthController authController,
+  InventarioController controller,
+) {
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: authController,
+    redirect: (context, state) {
+      final isAuthenticated = authController.isAuthenticated;
+      final isGoingToLogin = state.matchedLocation == '/login';
+
+      // 1. Si no está autenticado y no está en /login, redirigir obligatoriamente al login
+      if (!isAuthenticated) {
+        return isGoingToLogin ? null : '/login';
+      }
+
+      // 2. Si ya está autenticado e intenta ingresar a /login, redirigir al Dashboard principal
+      if (isGoingToLogin) {
+        return '/';
+      }
+
+      // 3. Permitir acceso a la ruta solicitada
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => LoginScreen(authController: authController),
+      ),
       GoRoute(
         path: '/',
         name: 'dashboard',
-        builder: (context, state) => DashboardScreen(controller: controller),
+        builder: (context, state) => DashboardScreen(
+          controller: controller,
+          authController: authController,
+        ),
       ),
       GoRoute(
         path: '/productos',

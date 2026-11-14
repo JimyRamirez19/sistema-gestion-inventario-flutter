@@ -1,5 +1,8 @@
+import os
+from typing import Optional
 from sqlalchemy.orm import Session
 import models
+import auth
 
 INITIAL_PRODUCTS = [
     {
@@ -118,3 +121,38 @@ def seed_initial_products(db: Session) -> int:
     if inserted_count > 0:
         db.commit()
     return inserted_count
+
+def seed_initial_user(db: Session) -> Optional[models.Usuario]:
+    """
+    Inserta de forma idempotente un usuario administrador inicial utilizando
+    las credenciales configuradas en las variables de entorno (backend/.env).
+    Si el usuario ya existe por su correo, no lo duplica ni sobrescribe su contraseña.
+    """
+    admin_name = os.getenv("SEED_ADMIN_NAME", "Administrador del Sistema")
+    admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@inventario.com").strip().lower()
+    admin_password = os.getenv("SEED_ADMIN_PASSWORD")
+
+    if not admin_password:
+        raise RuntimeError(
+            "CRÍTICO: SEED_ADMIN_PASSWORD no está definida en backend/.env. "
+            "No se puede sembrar el usuario administrador inicial."
+        )
+
+    # Verificación de idempotencia
+    existing_user = db.query(models.Usuario).filter(models.Usuario.email == admin_email).first()
+    if existing_user:
+        return existing_user
+
+    # Creación segura con hash bcrypt
+    hashed_pw = auth.hash_password(admin_password)
+    nuevo_admin = models.Usuario(
+        nombre=admin_name,
+        email=admin_email,
+        hashed_password=hashed_pw,
+        is_active=True
+    )
+    db.add(nuevo_admin)
+    db.commit()
+    db.refresh(nuevo_admin)
+    return nuevo_admin
+

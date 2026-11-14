@@ -41,3 +41,48 @@ class ProductoResponse(ProductoBase):
 class MensajeResponse(BaseModel):
     message: str
     id: Optional[int] = None
+
+# ==============================================================================
+# ESQUEMAS PARA AUTENTICACIÓN Y USUARIOS
+# ==============================================================================
+
+class UserLogin(BaseModel):
+    email: str = Field(..., min_length=3, max_length=150, description="Correo electrónico del usuario")
+    password: str = Field(..., min_length=1, max_length=100, description="Contraseña en texto claro para validar")
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email_format(cls, value: str) -> str:
+        if isinstance(value, str):
+            cleaned = value.strip().lower()
+            if not cleaned or "@" not in cleaned or "." not in cleaned.split("@")[-1]:
+                raise ValueError("Debe ingresar una dirección de correo electrónico válida.")
+            return cleaned
+        return value
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def validate_password_not_empty(cls, value: str) -> str:
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if not cleaned:
+                raise ValueError("La contraseña no puede estar vacía ni contener solo espacios.")
+            return cleaned
+        return value
+
+class UserResponse(BaseModel):
+    id: int
+    nombre: str
+    email: str
+    is_active: bool = True
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+

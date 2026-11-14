@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../controllers/auth_controller.dart';
 import '../controllers/inventario_controller.dart';
 import '../core/constants/app_colors.dart';
 import '../core/constants/api_constants.dart';
 import '../core/utils/formatters.dart';
 import '../widgets/metric_card.dart';
+import '../widgets/session_info_dialog.dart';
 import '../widgets/state_views.dart';
 
 class DashboardScreen extends StatelessWidget {
   final InventarioController controller;
+  final AuthController? authController;
 
-  const DashboardScreen({super.key, required this.controller});
+  const DashboardScreen({
+    super.key,
+    required this.controller,
+    this.authController,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final listenable = authController != null
+        ? Listenable.merge([controller, authController!])
+        : controller;
+
     return AnimatedBuilder(
-      animation: controller,
+      animation: listenable,
       builder: (context, _) {
         return Scaffold(
           appBar: AppBar(
@@ -37,6 +48,12 @@ class DashboardScreen extends StatelessWidget {
                 tooltip: 'Información de API',
                 onPressed: () => _mostrarInfoDialog(context),
               ),
+              if (authController != null)
+                IconButton(
+                  icon: const Icon(Icons.account_circle_outlined),
+                  tooltip: 'Mi Sesión (JWT)',
+                  onPressed: () => SessionInfoDialog.show(context, authController!),
+                ),
             ],
           ),
           body: controller.isLoading
@@ -251,6 +268,9 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHeaderBanner(BuildContext context) {
+    final usuario = authController?.usuarioActual;
+    final nombreSaludo = usuario?.nombre ?? authController?.nombreUsuario;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -274,26 +294,58 @@ class DashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'ELECTIVA PROFESIONAL I • PARCIAL II',
-                    style: TextStyle(
-                      color: AppColors.accentLight,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'ELECTIVA PROFESIONAL I • PARCIAL II',
+                        style: TextStyle(
+                          color: AppColors.accentLight,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (authController?.isAuthenticated == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.5)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shield_outlined, color: Color(0xFF86EFAC), size: 11),
+                            SizedBox(width: 4),
+                            Text(
+                              'JWT ACTIVO',
+                              style: TextStyle(
+                                color: Color(0xFF86EFAC),
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Gestión Comercial de Inventario',
-                  style: TextStyle(
+                Text(
+                  nombreSaludo != null
+                      ? 'Hola, $nombreSaludo'
+                      : 'Gestión Comercial de Inventario',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -307,13 +359,17 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+          InkWell(
+            onTap: authController != null ? () => SessionInfoDialog.show(context, authController!) : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.analytics_outlined, color: Colors.white, size: 32),
             ),
-            child: const Icon(Icons.analytics_outlined, color: Colors.white, size: 32),
           ),
         ],
       ),

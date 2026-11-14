@@ -31,4 +31,6 @@ class ApiConstants {
   }
 
   static const String productosEndpoint = '/productos';
+  static const String loginEndpoint = '/auth/login';
+  static const String meEndpoint = '/auth/me';
 }

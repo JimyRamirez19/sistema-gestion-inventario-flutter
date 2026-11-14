@@ -1,12 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../services/storage_service.dart';
 import '../constants/api_constants.dart';
 import '../errors/api_exception.dart';
+import 'auth_interceptor.dart';
 
 class ApiClient {
   late final Dio dio;
 
-  ApiClient({String? baseUrlOverride}) {
+  ApiClient({
+    String? baseUrlOverride,
+    StorageService? storageService,
+    AuthInterceptor? authInterceptor,
+  }) {
     final base = baseUrlOverride ?? ApiConstants.baseUrl;
     dio = Dio(
       BaseOptions(
@@ -20,6 +26,11 @@ class ApiClient {
       ),
     );
 
+    // 1. Interceptor de Autenticación JWT (inyección de Bearer token y captura de 401)
+    final interceptor = authInterceptor ?? AuthInterceptor(storageService: storageService);
+    dio.interceptors.add(interceptor);
+
+    // 2. Interceptor de depuración en modo desarrollo
     if (kDebugMode) {
       dio.interceptors.add(
         InterceptorsWrapper(
