@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 import models
 import schemas
+import auth
 
 def get_productos(db: Session, skip: int = 0, limit: int = 1000) -> List[models.Producto]:
     return db.query(models.Producto).order_by(models.Producto.id.asc()).offset(skip).limit(limit).all()
@@ -106,3 +107,74 @@ def delete_producto(db: Session, producto_id: int) -> bool:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error inesperado al eliminar el producto."
         )
+
+# ==============================================================================
+# OPERACIONES DE USUARIOS Y AUTENTICACIÓN
+# ==============================================================================
+
+def get_user_by_email(db: Session, email: str) -> Optional[models.Usuario]:
+    """Busca un usuario en la base de datos por su correo electrónico (normalizado a minúsculas)."""
+    cleaned_email = email.strip().lower()
+    return db.query(models.Usuario).filter(models.Usuario.email == cleaned_email).first()
+
+def get_user_by_id(db: Session, user_id: int) -> Optional[models.Usuario]:
+    """Busca un usuario en la base de datos por su ID único."""
+    return db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
+
+def create_user(
+    db: Session,
+    nombre: str,
+    email: str,
+    password: str,
+    is_active: bool = True
+) -> models.Usuario:
+    """
+    Crea un nuevo usuario en la base de datos aplicando hash seguro con bcrypt a la contraseña.
+    Nunca almacena contraseñas en texto claro.
+    """
+    cleaned_email = email.strip().lower()
+    existing = get_user_by_email(db, cleaned_email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El correo electrónico '{cleaned_email}' ya está registrado."
+        )
+
+    hashed = auth.hash_password(password)
+    db_user = models.Usuario(
+        nombre=nombre.strip(),
+        email=cleaned_email,
+        hashed_password=hashed,
+        is_active=is_active
+    )
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error de integridad: el correo ya se encuentra en uso."
+        )
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error inesperado al registrar el usuario."
+        )
+
+def authenticate_user(db: Session, email: str, password: str) -> Optional[models.Usuario]:
+    """
+    Autentica un usuario verificando su existencia y contrastando la contraseña
+    en texto plano contra el hash almacenado mediante bcrypt.
+    Retorna la instancia del modelo Usuario si es válido, o None en caso contrario.
+    """
+    user = get_user_by_email(db, email)
+    if not user:
+        return None
+    if not auth.verify_password(password, user.hashed_password):
+        return None
+    return user
+
